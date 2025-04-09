@@ -155,14 +155,14 @@ def load_img(path):
     return img
 
 def kantenbild(img):
-    print(img.shape)
+    #print(img.shape)
     padded = np.zeros((img.shape[0]+2, img.shape[1]+2))
     padded[1:-1, 1:-1] = img.copy()
     dx = 1/3*(padded[:,2:]+padded[:,1:-1]+padded[:,:-2])
     dx = dx[2:]-dx[:-2]
     dy = 1/3*(padded[2:]+padded[1:-1]+padded[:-2])
     dy = dy[:,2:]-dy[:,:-2]
-    print(dx.shape, dy.shape)
+    #print(dx.shape, dy.shape)
     out = np.sqrt(dx**2+dy**2)
     out = 1-(out/(out.max()+1e-8))
     out[0] = 1
