@@ -172,6 +172,7 @@ def kantenbild(img):
     out[-1] = 1
     out[:,0] = 1
     out[:,-1] = 1
+    out[out<0.5] = 0
     return out
 
 class Knoten():
