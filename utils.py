@@ -142,12 +142,9 @@ def a_stern_img(karte, start, ziel, heuristik=None):
         pfad.append(hier.copy())
     return np.array(pfad)[::-1], costmat, besucht
 
-
 def draw_path(path, c="black"):
     for p1, p2 in zip(path[1:], path[:-1]):
         plt.plot([p1[1], p2[1]], [p1[0], p2[0]], c=c)
-
-
 
 def load_img(path):
     img = np.array(Image.open(path).convert("RGB")).astype(np.float32)
