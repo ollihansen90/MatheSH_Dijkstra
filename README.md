@@ -11,5 +11,5 @@ Der allgemeine Ablauf zur Vorbereitung auf den IMIS-Pool-Rechnern ist wie folgt:
 2. MatheSH_Dijkstra
 3. ZIP runterladen und entpacken
 4. CMD starten
-5. jupyter notebook
-6. code .
+5. `jupyter notebook`
+6. `code .`
