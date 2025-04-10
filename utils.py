@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+from IPython.display import display, Markdown
+import random
 
 def fade(t):
     """Fadekurve nach Ken Perlin"""
@@ -85,7 +87,8 @@ def a_stern(karte, start, ziel, heuristik=None):
             nn = idx+dxdy[n]
             if any(nn<0) or any(nn>(np.array(map.shape)-1)) or besucht[nn[0], nn[1]]:
                 continue
-            kosten = np.abs(map[idx[0], idx[1]]-map[nn[0], nn[1]])
+            kosten = -(map[idx[0], idx[1]]-map[nn[0], nn[1]])
+            #if kosten < 0: kosten=0
             if costmat[nn[0], nn[1]] > costmat[idx[0], idx[1]]+kosten:
                 costmat[nn[0], nn[1]] = costmat[idx[0], idx[1]]+kosten
                 vorgaengermat[nn[0], nn[1]] = n
@@ -170,3 +173,178 @@ def kantenbild(img):
     out[:,0] = 1
     out[:,-1] = 1
     return out
+
+class Knoten():
+    def __init__(self, name, pos):
+        self.name = name
+        self.pos = pos
+        self.nachbarn = []
+        self.vorg = None
+        self.kosten = float("inf")
+
+    def copy(self):
+        out = Knoten(self.name, self.pos)
+
+        out.nachbarn = self.nachbarn.copy()
+        out.vorg = self.vorg
+        out.kosten = self.kosten
+        return out
+
+    def set_nachbarn(self, nachbar):
+        if isinstance(nachbar, list):
+            self.nachbarn.extend(nachbar)
+        else:
+            self.nachbarn.append(nachbar)
+
+    def __repr__(self):
+        return f"Knoten {self.name} hat Position {self.pos} und Verbindungen {self.nachbarn}."
+
+    def display(self):
+        text = f"Knoten **{self.name}** hat Position **{self.pos}**. Verbindungen:\n"
+        table = "| Knoten | Kosten |\n|---|---|\n"
+        for eintrag in self.nachbarn:
+            table += f"|{eintrag[0]}|{eintrag[1]}|\n"
+        display(Markdown(text))
+        display(Markdown(table))
+
+class Knotenliste():
+    def __init__(self):
+        self.liste = []
+
+    def append(self, item):
+        self.liste.append(item)
+
+    def __getitem__(self, idx):
+        return self.liste[idx]
+
+    def get_knoten(self, name):
+        for idx in range(len(self.liste)):
+            if self.liste[idx].name == name:
+                return self.liste[idx]
+
+    def display_knoten(self):
+        aktuell = self.liste[0]
+
+        while True:
+            aktuell.display()
+            naechster = input("Gib einen Knotennamen ein. ")
+            for eintrag in self.liste:
+                if naechster.upper()==eintrag.name:
+                    aktuell = self.get_knoten(naechster)
+                    break
+            else:
+                print(f"{naechster} ist leider nicht enthalten.")
+
+    def verbinde(self, verb):
+        k1 = verb[0]
+        k2 = verb[1]
+        val = float(verb[2])
+        self._verbinde(k1, k2, val)
+
+    def _verbinde(self, k1, k2, val):
+        for k in self.liste:
+            if k.name==k1:
+                k.set_nachbarn((k2, val))
+            elif k.name==k2:
+                k.set_nachbarn((k1,val))
+
+    def draw(self):
+        plt.figure()
+        for k in self.liste:
+            plt.scatter(k.pos[0], k.pos[1], zorder=3, c="tab:blue")
+            plt.text(k.pos[0], k.pos[1], k.name, zorder=4)
+
+        for k1 in self.liste:
+            for k2name, v in k1.nachbarn:
+                plt.plot([k1.pos[0], self.get_knoten(k2name).pos[0]], [k1.pos[1], self.get_knoten(k2name).pos[1]], "k")
+                plt.text((k1.pos[0]+self.get_knoten(k2name).pos[0])/2, (k1.pos[1]+self.get_knoten(k2name).pos[1])/2, str(v), zorder=3)
+
+        plt.axis("scaled")
+        plt.show()
+
+class Pfad(Knotenliste):
+    def __init__(self):
+        super().__init__()
+        self.kostenliste = []
+        self.pfad = []
+
+    def _verbinde(self, k1, k2, kosten):
+        ziel = self.get_knoten(k2)
+        ziel.nachbarn = [(k1, kosten)]
+
+    def menschenwalk(self, graph, start="S", end="E"):
+        display(Markdown(f"### Wir suchen den Pfad von Knoten {start} zu Knoten {end}."))
+
+        aktuell = graph.get_knoten(start)
+
+        while aktuell.name!=end:
+            display(Markdown(f"Wir sind aktuell bei Knoten **{aktuell.name}**. Momentan sind unsere Kosten **{sum(self.kostenliste)}**. Er ist verbunden mit den folgenden Knoten:"))
+            aktuell.display()
+            weiter = True
+            while weiter:
+                weiter = False; naechster = input("Wo wollen wir hingehen? ").upper()
+                if naechster=="": break
+                for eintrag in aktuell.nachbarn:
+                    if naechster.upper()==eintrag[0]:
+                        self.kostenliste.append(eintrag[1]); self.pfad.append(naechster); break
+                else:
+                    print(f"{naechster} ist leider nicht enthalten."); weiter = True
+            aktuell = graph.get_knoten(naechster)
+        display(Markdown(f"Sehr gut, wir sind am Zielknoten {end} angekommen! Unser Pfad hat Kosten von {sum(self.kostenliste)}."))
+
+    def randomwalk(self, graph, start="S", end="E"):
+        knoten = graph.get_knoten(start); self.pfad.append(knoten.name)
+        while knoten.name!=end:
+            nachbarliste = knoten.nachbarn
+            naechster = random.choice(nachbarliste)
+            knoten = graph.get_knoten(naechster[0])
+            self.pfad.append(knoten.name)
+            self.kostenliste.append(naechster[1])
+
+    def prune(self):
+        for i in range(len(self.pfad), 0, -1):
+            if self.pfad[i-1] in self.pfad[:i-1]:
+                neueliste = self.pfad[:self.pfad.index(self.pfad[i-1])]+self.pfad[i-1:]
+                neuekosten = self.kostenliste[:self.pfad.index(self.pfad[i-1])]+self.kostenliste[i-1:]
+                self.pfad, self.kostenliste = neueliste, neuekosten
+                break
+        else:
+            return
+        self.prune()
+
+    def __repr__(self):
+        return f"Der Pfad {self.pfad} hatte die Kosten {sum(self.kostenliste)}."
+
+def dijkstra_graph(adj, start=0, ziel=5):
+    besucht = []
+    vor = []
+    keys = "SABCDEFGHIJKL"
+    nodelist = list(range(len(adj)))
+    nachbarn = [[i, float("inf"), -1] for i in nodelist]
+    nachbarn[start][1] = 0
+    nachbarn[start][2] = 0
+
+    while nodelist[ziel] not in besucht:
+        nachbarn = sorted(nachbarn, key=lambda x: x[1])
+        node = nachbarn[0]
+        for j, (i, val, _) in enumerate(nachbarn):
+            if nv:=adj[node[0], i]:
+                new_val = node[1]+nv
+                if new_val<nachbarn[j][1]:
+                    #print(f"Update Schritt {len(besucht)}: [{keys[nachbarn[j][0]]},{nachbarn[j][1]}]->[{keys[nachbarn[j][0]]},{int(new_val)}]")
+                    nachbarn[j][1] = new_val
+                    nachbarn[j][-1] = node[0]
+        last = nachbarn.pop(0)
+        besucht.append(node[0])
+        vor.append(node[-1])
+
+    vor = list(zip([keys[i] for i in besucht], [keys[i] for i in vor]))
+    weg = [vor[-1][0]]
+    while weg[-1] != keys[start]:
+        for i in range(len(vor)):
+            if vor[i][0] == weg[-1]:
+                weg.append(vor[i][1])
+                break
+    
+    print("Kürzester Weg:", weg[::-1])
+    print("Kosten:", last[1])
