@@ -5,7 +5,7 @@ import numpy as np
 img = "marienkaefer.jpg"
 #img = "eule.jpg"
 #img = "pantoffeltierchen.jpg"
-img = "holstentor.jpg"
+#img = "holstentor.jpg"
 
 img = load_img("bilder/"+img)
 every = np.min(img.shape[:2])//150
