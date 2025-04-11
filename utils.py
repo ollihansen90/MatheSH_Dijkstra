@@ -146,17 +146,9 @@ def draw_path(path, c="black"):
     for p1, p2 in zip(path[1:], path[:-1]):
         plt.plot([p1[1], p2[1]], [p1[0], p2[0]], c=c)
 
-def load_img(path):
-    img = np.array(Image.open(path).convert("RGB")).astype(np.float32)
-    img -= np.min(img)
-    img /= np.max(img)
-
-    img = img@np.array([0.2126, 0.7152, 0.0722])
-    return img
-
 def kantenbild(img):
     #print(img.shape)
-    padded = np.zeros((img.shape[0]+2, img.shape[1]+2))
+    padded = np.zeros((img.shape[0]+2, img.shape[1]+2, 3))
     padded[1:-1, 1:-1] = img.copy()
     dx = 1/3*(padded[:,2:]+padded[:,1:-1]+padded[:,:-2])
     dx = dx[2:]-dx[:-2]
@@ -170,7 +162,15 @@ def kantenbild(img):
     out[:,0] = 1
     out[:,-1] = 1
     out[out<0.5] = 0
+    out = np.min(out, axis=-1)
     return out
+
+def load_img(path):
+    img = np.array(Image.open(path).convert("RGB")).astype(np.float32)
+    img -= np.min(img)
+    img /= np.max(img)
+
+    return img
 
 class Knoten():
     def __init__(self, name, pos):
